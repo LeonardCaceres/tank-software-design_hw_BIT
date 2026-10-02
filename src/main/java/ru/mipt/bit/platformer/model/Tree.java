@@ -1,15 +1,13 @@
 package ru.mipt.bit.platformer.model;
 
-import com.badlogic.gdx.math.GridPoint2;
-
 public class Tree {
-    private final GridPoint2 coordinates;
+    private final Position position;
 
-    public Tree(GridPoint2 coordinates) {
-        this.coordinates = new GridPoint2(coordinates);
+    public Tree(Position position) {
+        this.position = position;
     }
 
-    public GridPoint2 getCoordinates() {
-        return new GridPoint2(coordinates);
+    public Position getPosition() {
+        return position;
     }
 }

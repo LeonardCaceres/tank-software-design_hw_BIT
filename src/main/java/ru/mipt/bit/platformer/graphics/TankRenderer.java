@@ -2,6 +2,7 @@ package ru.mipt.bit.platformer.graphics;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Rectangle;
 import ru.mipt.bit.platformer.model.Tank;
 import ru.mipt.bit.platformer.util.TileMovement;
@@ -21,11 +22,14 @@ public class TankRenderer {
     }
 
     public void render(Batch batch, Tank tank) {
+        GridPoint2 from = new GridPoint2(
+                tank.getPosition().getX(), tank.getPosition().getY());
+        GridPoint2 to = new GridPoint2(
+                tank.getDestinationPosition().getX(),
+                tank.getDestinationPosition().getY());
+
         tileMovement.moveRectangleBetweenTileCenters(
-                rectangle,
-                tank.getCoordinates(),
-                tank.getDestinationCoordinates(),
-                tank.getMovementProgress());
+                rectangle, from, to, tank.getMovementProgress());
 
         drawTextureRegionUnscaled(batch, graphics, rectangle,
                 tank.getDirection().getRotation());

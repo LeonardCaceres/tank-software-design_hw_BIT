@@ -10,7 +10,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
-import com.badlogic.gdx.math.GridPoint2;
 import ru.mipt.bit.platformer.graphics.GameRenderer;
 import ru.mipt.bit.platformer.graphics.LevelRenderer;
 import ru.mipt.bit.platformer.graphics.TankRenderer;
@@ -19,13 +18,23 @@ import ru.mipt.bit.platformer.input.GdxInputSource;
 import ru.mipt.bit.platformer.input.InputHandlerRegistry;
 import ru.mipt.bit.platformer.input.InputSource;
 import ru.mipt.bit.platformer.input.TankMovementHandler;
+import ru.mipt.bit.platformer.model.Direction;
 import ru.mipt.bit.platformer.model.Field;
+import ru.mipt.bit.platformer.model.Position;
 import ru.mipt.bit.platformer.model.Tank;
 import ru.mipt.bit.platformer.model.Tree;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.badlogic.gdx.Input.Keys.*;
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
 
 public class GameDesktopLauncher implements ApplicationListener {
+
+    private static final float TANK_MOVEMENT_SPEED = 0.4f;
+    private static final Position TANK_START = new Position(1, 1);
+    private static final Position TREE_POSITION = new Position(1, 3);
 
     private Batch batch;
     private Field field;
@@ -47,9 +56,10 @@ public class GameDesktopLauncher implements ApplicationListener {
         greenTreeTexture = new Texture("images/greenTree.png");
 
         field = new Field();
-        Tree tree = new Tree(new GridPoint2(1, 3));
+        Tree tree = new Tree(TREE_POSITION);
         field.addTree(tree);
-        tank = new Tank(new GridPoint2(1, 1));
+        tank = new Tank(TANK_START, TANK_MOVEMENT_SPEED);
+
 
         TankRenderer tankRenderer = new TankRenderer(
                 new TextureRegion(blueTankTexture),
@@ -57,12 +67,27 @@ public class GameDesktopLauncher implements ApplicationListener {
         TreeRenderer treeRenderer = new TreeRenderer(
                 new TextureRegion(greenTreeTexture),
                 levelRenderer.getGroundLayer(),
-                tree.getCoordinates());
+                tree.getPosition());
         renderer = new GameRenderer(levelRenderer, tankRenderer, treeRenderer);
 
         InputSource input = new GdxInputSource();
         inputHandlers = new InputHandlerRegistry();
-        inputHandlers.register(new TankMovementHandler(input, tank, field));
+        inputHandlers.register(new TankMovementHandler(
+                input, tank, field, buildKeyBindings()));
+
+    }
+
+    private Map<Integer, Direction> buildKeyBindings() {
+        Map<Integer, Direction> bindings = new HashMap<>();
+        bindings.put(UP,    Direction.UP);
+        bindings.put(W,     Direction.UP);
+        bindings.put(DOWN,  Direction.DOWN);
+        bindings.put(S,     Direction.DOWN);
+        bindings.put(LEFT,  Direction.LEFT);
+        bindings.put(A,     Direction.LEFT);
+        bindings.put(RIGHT, Direction.RIGHT);
+        bindings.put(D,     Direction.RIGHT);
+        return bindings;
     }
 
     @Override

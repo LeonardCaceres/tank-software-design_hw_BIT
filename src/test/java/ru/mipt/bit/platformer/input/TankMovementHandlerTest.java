@@ -1,12 +1,14 @@
 package ru.mipt.bit.platformer.input;
 
-import com.badlogic.gdx.math.GridPoint2;
 import org.junit.jupiter.api.Test;
 import ru.mipt.bit.platformer.model.Direction;
 import ru.mipt.bit.platformer.model.Field;
+import ru.mipt.bit.platformer.model.Position;
 import ru.mipt.bit.platformer.model.Tank;
 import ru.mipt.bit.platformer.model.Tree;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static com.badlogic.gdx.Input.Keys.*;
@@ -14,41 +16,79 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TankMovementHandlerTest {
 
+    private static final float SPEED = 0.4f;
+
     private static InputSource fakeInput(Integer... pressedKeys) {
         Set<Integer> pressed = Set.of(pressedKeys);
         return pressed::contains;
     }
 
+    private static Map<Integer, Direction> defaultBindings() {
+        Map<Integer, Direction> b = new HashMap<>();
+        b.put(UP, Direction.UP);
+        b.put(W, Direction.UP);
+        b.put(DOWN, Direction.DOWN);
+        b.put(S, Direction.DOWN);
+        b.put(LEFT, Direction.LEFT);
+        b.put(A, Direction.LEFT);
+        b.put(RIGHT, Direction.RIGHT);
+        b.put(D, Direction.RIGHT);
+        return b;
+    }
+
     @Test
     void noKeyPressed_doesNotChangeDirection() {
-        Tank tank = new Tank(new GridPoint2(0, 0));
-        new TankMovementHandler(fakeInput(), tank, new Field()).handle();
+        Tank tank = new Tank(new Position(0, 0), SPEED);
+        new TankMovementHandler(fakeInput(), tank, new Field(), defaultBindings()).handle();
         assertEquals(Direction.RIGHT, tank.getDirection());
     }
 
     @Test
     void upArrow_movesTankUp() {
-        Tank tank = new Tank(new GridPoint2(0, 0));
-        new TankMovementHandler(fakeInput(UP), tank, new Field()).handle();
+        Tank tank = new Tank(new Position(0, 0), SPEED);
+        new TankMovementHandler(fakeInput(UP), tank, new Field(), defaultBindings()).handle();
         assertEquals(Direction.UP, tank.getDirection());
-        assertEquals(new GridPoint2(0, 1), tank.getDestinationCoordinates());
+        assertEquals(new Position(0, 1), tank.getDestinationPosition());
     }
 
     @Test
     void wKey_worksLikeUpArrow() {
-        Tank tank = new Tank(new GridPoint2(0, 0));
-        new TankMovementHandler(fakeInput(W), tank, new Field()).handle();
+        Tank tank = new Tank(new Position(0, 0), SPEED);
+        new TankMovementHandler(fakeInput(W), tank, new Field(), defaultBindings()).handle();
         assertEquals(Direction.UP, tank.getDirection());
+    }
+
+    @Test
+    void leftAndRight_work() {
+        Tank t1 = new Tank(new Position(1, 1), SPEED);
+        new TankMovementHandler(fakeInput(LEFT), t1, new Field(), defaultBindings()).handle();
+        assertEquals(Direction.LEFT, t1.getDirection());
+        assertEquals(new Position(0, 1), t1.getDestinationPosition());
+
+        Tank t2 = new Tank(new Position(1, 1), SPEED);
+        new TankMovementHandler(fakeInput(RIGHT), t2, new Field(), defaultBindings()).handle();
+        assertEquals(Direction.RIGHT, t2.getDirection());
+        assertEquals(new Position(2, 1), t2.getDestinationPosition());
     }
 
     @Test
     void obstacleBlocksMovement() {
         Field field = new Field();
-        field.addTree(new Tree(new GridPoint2(0, 1)));
-        Tank tank = new Tank(new GridPoint2(0, 0));
-        new TankMovementHandler(fakeInput(UP), tank, field).handle();
+        field.addTree(new Tree(new Position(0, 1)));
+        Tank tank = new Tank(new Position(0, 0), SPEED);
+        new TankMovementHandler(fakeInput(UP), tank, field, defaultBindings()).handle();
         assertEquals(Direction.UP, tank.getDirection());
-        assertEquals(new GridPoint2(0, 0), tank.getDestinationCoordinates());
+        assertEquals(new Position(0, 0), tank.getDestinationPosition());
         assertTrue(tank.isAtDestination());
+    }
+
+    @Test
+    void customBindingForNewKeyWorksWithoutChangingHandler() {
+        Map<Integer, Direction> custom = new HashMap<>();
+        custom.put(I, Direction.UP);
+
+        Tank tank = new Tank(new Position(0, 0), SPEED);
+        new TankMovementHandler(fakeInput(I), tank, new Field(), custom).handle();
+        assertEquals(Direction.UP, tank.getDirection());
     }
 }
