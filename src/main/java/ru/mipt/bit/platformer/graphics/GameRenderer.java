@@ -3,17 +3,19 @@ package ru.mipt.bit.platformer.graphics;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import ru.mipt.bit.platformer.model.Tank;
 
+import java.util.List;
+
 public class GameRenderer {
     private final LevelRenderer levelRenderer;
     private final TankRenderer tankRenderer;
-    private final TreeRenderer treeRenderer;
+    private final List<TreeRenderer> treeRenderers;
 
     public GameRenderer(LevelRenderer levelRenderer,
                         TankRenderer tankRenderer,
-                        TreeRenderer treeRenderer) {
+                        List<TreeRenderer> treeRenderers) {
         this.levelRenderer = levelRenderer;
         this.tankRenderer = tankRenderer;
-        this.treeRenderer = treeRenderer;
+        this.treeRenderers = treeRenderers;
     }
 
     public void render(Batch batch, Tank tank) {
@@ -21,7 +23,9 @@ public class GameRenderer {
 
         batch.begin();
         tankRenderer.render(batch, tank);
-        treeRenderer.render(batch);
+        for (TreeRenderer treeRenderer : treeRenderers) {
+            treeRenderer.render(batch);
+        }
         batch.end();
     }
 
