@@ -15,18 +15,22 @@ public class Tank {
         this.movementSpeed = movementSpeed;
     }
 
-    public void move(Direction newDirection, Field field) {
-        if (!isAtDestination()) return;
+    public void move(Direction newDirection, Level level) {
+        if (!isAtDestination()) {
+            return;
+        }
         this.direction = newDirection;
         Position next = newDirection.next(position);
-        if (!field.isObstacle(next)) {
+        if (level.canMove(this, next)) {
             destinationPosition = next;
             movementProgress = 0f;
         }
     }
 
     public void update(float deltaTime) {
-        if (isAtDestination()) return;
+        if (isAtDestination()) {
+            return;
+        }
         movementProgress = Math.min(1f, movementProgress + deltaTime / movementSpeed);
         if (movementProgress >= 1f - EPSILON) {
             movementProgress = 1f;
@@ -38,8 +42,8 @@ public class Tank {
         return Math.abs(movementProgress - 1f) < EPSILON;
     }
 
-    public Position getPosition()              { return position; }
-    public Position getDestinationPosition()   { return destinationPosition; }
-    public Direction getDirection()            { return direction; }
-    public float getMovementProgress()         { return movementProgress; }
+    public Position getPosition()            { return position; }
+    public Position getDestinationPosition() { return destinationPosition; }
+    public Direction getDirection()          { return direction; }
+    public float getMovementProgress()       { return movementProgress; }
 }

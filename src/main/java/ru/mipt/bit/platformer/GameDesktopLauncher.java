@@ -10,19 +10,20 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import ru.mipt.bit.platformer.control.AiTankControlStrategy;
+import ru.mipt.bit.platformer.control.PlayerTankControlStrategy;
+import ru.mipt.bit.platformer.control.TankController;
 import ru.mipt.bit.platformer.graphics.GameRenderer;
 import ru.mipt.bit.platformer.graphics.LevelRenderer;
 import ru.mipt.bit.platformer.graphics.TankRenderer;
 import ru.mipt.bit.platformer.graphics.TreeRenderer;
 import ru.mipt.bit.platformer.input.GdxInputSource;
-import ru.mipt.bit.platformer.input.InputHandlerRegistry;
 import ru.mipt.bit.platformer.input.InputSource;
-import ru.mipt.bit.platformer.input.TankMovementHandler;
 import ru.mipt.bit.platformer.level.FileLevelSource;
 import ru.mipt.bit.platformer.level.LevelSource;
 import ru.mipt.bit.platformer.level.RandomLevelSource;
+import ru.mipt.bit.platformer.level.RandomTankSpawner;
 import ru.mipt.bit.platformer.model.Direction;
-import ru.mipt.bit.platformer.model.Field;
 import ru.mipt.bit.platformer.model.Level;
 import ru.mipt.bit.platformer.model.Tank;
 import ru.mipt.bit.platformer.model.Tree;
@@ -41,11 +42,11 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     private static final float TANK_MOVEMENT_SPEED = 0.4f;
     private static final boolean USE_RANDOM_LEVEL = false;
+    private static final int AI_TANK_COUNT = 3;
 
     private Batch batch;
-    private Field field;
-    private Tank tank;
-    private InputHandlerRegistry inputHandlers;
+    private Level level;
+    private List<TankController> controllers;
     private GameRenderer renderer;
 
     private Texture blueTankTexture;
@@ -55,41 +56,56 @@ public class GameDesktopLauncher implements ApplicationListener {
     public void create() {
         batch = new SpriteBatch();
 
-        TiledMap level = new TmxMapLoader().load("level.tmx");
-        LevelRenderer levelRenderer = new LevelRenderer(level, batch);
+        TiledMap tiledMap = new TmxMapLoader().load("level.tmx");
+        LevelRenderer levelRenderer = new LevelRenderer(tiledMap, batch);
 
         blueTankTexture = new Texture("images/tank_blue.png");
         greenTreeTexture = new Texture("images/greenTree.png");
 
-        LevelSource levelSource = createLevelSource();
-        Level gameLevel = levelSource.load();
+        Random random = new Random();
+        LevelSource levelSource = createLevelSource(random);
+        level = levelSource.load();
 
-        field = gameLevel.getField();
-        tank = new Tank(gameLevel.getTankStart(), TANK_MOVEMENT_SPEED);
+        Tank playerTank = new Tank(level.getTankStart(), TANK_MOVEMENT_SPEED);
+        level.addTank(playerTank);
 
-        TankRenderer tankRenderer = new TankRenderer(
-                new TextureRegion(blueTankTexture),
-                levelRenderer.getTileMovement());
+        RandomTankSpawner spawner = new RandomTankSpawner(random);
+        List<Tank> aiTanks = spawner.spawn(level, AI_TANK_COUNT, TANK_MOVEMENT_SPEED);
+        for (Tank aiTank : aiTanks) {
+            level.addTank(aiTank);
+        }
+
+        InputSource input = new GdxInputSource();
+        controllers = new ArrayList<>();
+        controllers.add(new TankController(playerTank,
+                new PlayerTankControlStrategy(input, buildKeyBindings())));
+        for (Tank aiTank : aiTanks) {
+            controllers.add(new TankController(aiTank,
+                    new AiTankControlStrategy(random)));
+        }
+
+        List<TankRenderer> tankRenderers = new ArrayList<>();
+        for (Tank tank : level.getTanks()) {
+            tankRenderers.add(new TankRenderer(
+                    new TextureRegion(blueTankTexture),
+                    levelRenderer.getTileMovement(),
+                    tank));
+        }
 
         List<TreeRenderer> treeRenderers = new ArrayList<>();
-        for (Tree tree : field.getTrees()) {
+        for (Tree tree : level.getField().getTrees()) {
             treeRenderers.add(new TreeRenderer(
                     new TextureRegion(greenTreeTexture),
                     levelRenderer.getGroundLayer(),
                     tree.getPosition()));
         }
 
-        renderer = new GameRenderer(levelRenderer, tankRenderer, treeRenderers);
-
-        InputSource input = new GdxInputSource();
-        inputHandlers = new InputHandlerRegistry();
-        inputHandlers.register(new TankMovementHandler(
-                input, tank, field, buildKeyBindings()));
+        renderer = new GameRenderer(levelRenderer, tankRenderers, treeRenderers);
     }
 
-    private LevelSource createLevelSource() {
+    private LevelSource createLevelSource(Random random) {
         if (USE_RANDOM_LEVEL) {
-            return new RandomLevelSource(10, 8, 8, new Random());
+            return new RandomLevelSource(10, 8, 8, random);
         }
         String content = Gdx.files.internal("levels/level1.txt").readString();
         return new FileLevelSource(Arrays.asList(content.split("\\r?\\n")));
@@ -115,22 +131,19 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         float deltaTime = Gdx.graphics.getDeltaTime();
 
-        inputHandlers.handleAll();
-        tank.update(deltaTime);
-        renderer.render(batch, tank);
+        for (TankController controller : controllers) {
+            controller.update(level);
+        }
+        for (Tank tank : level.getTanks()) {
+            tank.update(deltaTime);
+        }
+
+        renderer.render(batch);
     }
 
-    @Override
-    public void resize(int width, int height) {
-    }
-
-    @Override
-    public void pause() {
-    }
-
-    @Override
-    public void resume() {
-    }
+    @Override public void resize(int width, int height) { }
+    @Override public void pause() { }
+    @Override public void resume() { }
 
     @Override
     public void dispose() {
