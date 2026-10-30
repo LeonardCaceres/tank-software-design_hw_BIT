@@ -9,7 +9,7 @@ import ru.mipt.bit.platformer.model.Tank;
 
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AiTankControlStrategyTest {
@@ -40,7 +40,7 @@ class AiTankControlStrategyTest {
     }
 
     @Test
-    void sameSeedProducesSameDirection() {
+    void sameSeedProducesSameCommand() {
         Tank t1 = new Tank(new Position(1, 1), 0.4f);
         Level l1 = emptyLevel();
         l1.addTank(t1);
@@ -53,6 +53,47 @@ class AiTankControlStrategyTest {
         new AiTankControlStrategy(new Random(7)).nextCommand(t2, l2)
                 .ifPresent(c -> c.execute());
 
-        assertEquals(t1.getDirection(), t2.getDirection());
+        org.junit.jupiter.api.Assertions.assertEquals(t1.getDirection(), t2.getDirection());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                l1.getBullets().size(), l2.getBullets().size());
+    }
+
+    @Test
+    void eventuallyProducesShootCommand() {
+        boolean sawShoot = false;
+        Random random = new Random(123);
+        Level level = emptyLevel();
+        Tank tank = new Tank(new Position(1, 1), 0.4f);
+        level.addTank(tank);
+        AiTankControlStrategy s = new AiTankControlStrategy(random);
+
+        for (int i = 0; i < 100 && !sawShoot; i++) {
+
+            tank.update(10f);
+            tank.shoot(level);
+            while (!level.getBullets().isEmpty()) {
+                level.removeBullet(level.getBullets().get(0));
+            }
+            tank.shoot(level);
+            while (!level.getBullets().isEmpty()) {
+                level.removeBullet(level.getBullets().get(0));
+            }
+            tank.update(10f);
+
+            int before = level.getBullets().size();
+            s.nextCommand(tank, level).ifPresent(c -> c.execute());
+            if (level.getBullets().size() > before) {
+                sawShoot = true;
+            }
+
+            while (!level.getBullets().isEmpty()) {
+                level.removeBullet(level.getBullets().get(0));
+            }
+            tank.update(10f);
+            if (!tank.isAtDestination()) {
+                tank.update(10f);
+            }
+        }
+        assertTrue(sawShoot, "AI should eventually shoot with fixed seed");
     }
 }
