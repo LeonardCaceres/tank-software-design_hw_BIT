@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TankControllerTest {
 
     @Test
-    void updateExecutesStrategyCommand() {
+    void createCommandDoesNotExecuteImmediately() {
         Tank tank = new Tank(new Position(1, 1), 0.4f);
         Level level = new Level(new Field(10, 8), new Position(0, 0));
         level.addTank(tank);
@@ -27,9 +27,37 @@ class TankControllerTest {
             t.move(Direction.UP, l);
         });
 
+        TankController controller = new TankController(tank, strategy);
+        controller.createCommand(level);
+
+        assertEquals(false, executed.get());
+        assertEquals(Direction.RIGHT, tank.getDirection());
+    }
+
+    @Test
+    void executeCommandExecutesPreviouslyCreated() {
+        Tank tank = new Tank(new Position(1, 1), 0.4f);
+        Level level = new Level(new Field(10, 8), new Position(0, 0));
+        level.addTank(tank);
+
+        TankControlStrategy strategy = (t, l) -> Optional.of(() -> t.move(Direction.UP, l));
+
+        TankController controller = new TankController(tank, strategy);
+        controller.createCommand(level);
+        controller.executeCommand();
+
+        assertEquals(Direction.UP, tank.getDirection());
+    }
+
+    @Test
+    void updateCombinesBothSteps() {
+        Tank tank = new Tank(new Position(1, 1), 0.4f);
+        Level level = new Level(new Field(10, 8), new Position(0, 0));
+        level.addTank(tank);
+
+        TankControlStrategy strategy = (t, l) -> Optional.of(() -> t.move(Direction.UP, l));
         new TankController(tank, strategy).update(level);
 
-        assertTrue(executed.get());
         assertEquals(Direction.UP, tank.getDirection());
     }
 

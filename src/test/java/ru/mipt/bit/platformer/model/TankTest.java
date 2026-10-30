@@ -24,6 +24,15 @@ class TankTest {
     }
 
     @Test
+    void startsWithFullHealth() {
+        Tank tank = new Tank(new Position(2, 2), SPEED, 100, 25);
+        assertEquals(100, tank.getHealth());
+        assertEquals(100, tank.getMaxHealth());
+        assertEquals(25, tank.getBulletDamage());
+        assertFalse(tank.isDead());
+    }
+
+    @Test
     void moveChangesDirectionImmediately() {
         Tank tank = new Tank(new Position(2, 2), SPEED);
         Level level = emptyLevel();
@@ -126,5 +135,85 @@ class TankTest {
         slow.update(0.5f);
         assertTrue(fast.isAtDestination());
         assertFalse(slow.isAtDestination());
+    }
+
+    @Test
+    void takeDamageReducesHealth() {
+        Tank tank = new Tank(new Position(0, 0), SPEED, 100, 25);
+        tank.takeDamage(40);
+        assertEquals(60, tank.getHealth());
+        assertFalse(tank.isDead());
+    }
+
+    @Test
+    void isDeadWhenHealthBelowZero() {
+        Tank tank = new Tank(new Position(0, 0), SPEED, 100, 25);
+        tank.takeDamage(101);
+        assertTrue(tank.isDead());
+    }
+
+    @Test
+    void isNotDeadAtZeroHealth() {
+        Tank tank = new Tank(new Position(0, 0), SPEED, 100, 25);
+        tank.takeDamage(100);
+        assertEquals(0, tank.getHealth());
+        assertFalse(tank.isDead());
+    }
+
+    @Test
+    void shootAddsBulletToLevel() {
+        Level level = emptyLevel();
+        Tank tank = new Tank(new Position(2, 2), SPEED);
+        level.addTank(tank);
+
+        tank.shoot(level);
+
+        assertEquals(1, level.getBullets().size());
+    }
+
+    @Test
+    void shootBulletStartsAtNextCellInDirection() {
+        Level level = emptyLevel();
+        Tank tank = new Tank(new Position(2, 2), SPEED);
+        level.addTank(tank);
+        tank.move(Direction.RIGHT, level);
+        tank.update(10f);
+
+        tank.shoot(level);
+
+        assertEquals(1, level.getBullets().size());
+        Bullet bullet = level.getBullets().get(0);
+        assertEquals(new Position(4, 2), bullet.getPosition());
+        assertEquals(tank, bullet.getOwner());
+    }
+
+    @Test
+    void shootHasCooldown() {
+        Level level = emptyLevel();
+        Tank tank = new Tank(new Position(2, 2), SPEED);
+        level.addTank(tank);
+
+        tank.shoot(level);
+        tank.shoot(level);
+
+        assertEquals(1, level.getBullets().size());
+    }
+
+    @Test
+    void shootWorksAgainAfterCooldown() {
+        Level level = emptyLevel();
+        Tank tank = new Tank(new Position(2, 2), SPEED);
+        level.addTank(tank);
+
+        tank.shoot(level);
+        assertEquals(1, level.getBullets().size());
+
+        for (int i = 0; i < 20; i++) {
+            level.tick(0.1f);
+        }
+        assertTrue(level.getBullets().isEmpty(), "bullet should have flown away");
+
+        tank.shoot(level);
+        assertEquals(1, level.getBullets().size());
     }
 }

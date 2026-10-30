@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.badlogic.gdx.Input.Keys.SPACE;
 import static com.badlogic.gdx.Input.Keys.UP;
 import static com.badlogic.gdx.Input.Keys.W;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,7 +29,7 @@ class PlayerTankControlStrategyTest {
     @Test
     void returnsEmptyWhenNoKeyPressed() {
         PlayerTankControlStrategy s = new PlayerTankControlStrategy(
-                fakeInput(), Map.of(UP, Direction.UP));
+                fakeInput(), Map.of(UP, Direction.UP), SPACE);
         Tank tank = new Tank(new Position(1, 1), 0.4f);
         Level level = new Level(new Field(10, 8), new Position(0, 0));
         level.addTank(tank);
@@ -37,25 +38,49 @@ class PlayerTankControlStrategyTest {
     }
 
     @Test
-    void returnsCommandWhenKeyPressed() {
+    void returnsMoveCommandWhenDirectionKeyPressed() {
         PlayerTankControlStrategy s = new PlayerTankControlStrategy(
-                fakeInput(UP), Map.of(UP, Direction.UP));
+                fakeInput(UP), Map.of(UP, Direction.UP), SPACE);
         Tank tank = new Tank(new Position(1, 1), 0.4f);
         Level level = new Level(new Field(10, 8), new Position(0, 0));
         level.addTank(tank);
 
         Optional<Command> cmd = s.nextCommand(tank, level);
         assertTrue(cmd.isPresent());
-
         cmd.get().execute();
         assertEquals(Direction.UP, tank.getDirection());
         assertEquals(new Position(1, 2), tank.getDestinationPosition());
     }
 
     @Test
+    void returnsShootCommandWhenSpacePressed() {
+        PlayerTankControlStrategy s = new PlayerTankControlStrategy(
+                fakeInput(SPACE), Map.of(UP, Direction.UP), SPACE);
+        Tank tank = new Tank(new Position(1, 1), 0.4f);
+        Level level = new Level(new Field(10, 8), new Position(0, 0));
+        level.addTank(tank);
+
+        s.nextCommand(tank, level).ifPresent(Command::execute);
+        assertEquals(1, level.getBullets().size());
+    }
+
+    @Test
+    void spaceTakesPriorityOverMovementKeys() {
+        PlayerTankControlStrategy s = new PlayerTankControlStrategy(
+                fakeInput(SPACE, UP), Map.of(UP, Direction.UP), SPACE);
+        Tank tank = new Tank(new Position(1, 1), 0.4f);
+        Level level = new Level(new Field(10, 8), new Position(0, 0));
+        level.addTank(tank);
+
+        s.nextCommand(tank, level).ifPresent(Command::execute);
+        assertEquals(1, level.getBullets().size());
+        assertTrue(tank.isAtDestination());
+    }
+
+    @Test
     void differentKeysMapToDifferentDirections() {
         PlayerTankControlStrategy s = new PlayerTankControlStrategy(
-                fakeInput(W), Map.of(W, Direction.UP));
+                fakeInput(W), Map.of(W, Direction.UP), SPACE);
         Tank tank = new Tank(new Position(1, 1), 0.4f);
         Level level = new Level(new Field(10, 8), new Position(0, 0));
         level.addTank(tank);
