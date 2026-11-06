@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BulletTest {
 
     private static Bullet newBullet(Tank owner, Position start, Direction dir) {
-        return new Bullet(owner, start, dir, 0.1f, 25);
+        return new Bullet(owner, start, dir, 0.1f, 10);
     }
 
     @Test

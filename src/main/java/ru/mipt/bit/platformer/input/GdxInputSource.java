@@ -7,4 +7,9 @@ public class GdxInputSource implements InputSource {
     public boolean isKeyPressed(int keyCode) {
         return Gdx.input.isKeyPressed(keyCode);
     }
+
+    @Override
+    public boolean isKeyJustPressed(int keyCode) {
+        return Gdx.input.isKeyJustPressed(keyCode);
+    }
 }

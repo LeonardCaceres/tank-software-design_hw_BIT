@@ -12,10 +12,12 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import ru.mipt.bit.platformer.command.ToggleHealthBarsCommand;
 import ru.mipt.bit.platformer.control.AiTankControlStrategy;
 import ru.mipt.bit.platformer.control.PlayerTankControlStrategy;
 import ru.mipt.bit.platformer.control.TankController;
 import ru.mipt.bit.platformer.graphics.GameRenderer;
+import ru.mipt.bit.platformer.graphics.HealthBarDisplay;
 import ru.mipt.bit.platformer.graphics.LevelRenderer;
 import ru.mipt.bit.platformer.input.GdxInputSource;
 import ru.mipt.bit.platformer.input.InputSource;
@@ -37,6 +39,7 @@ import java.util.Random;
 import static com.badlogic.gdx.Input.Keys.A;
 import static com.badlogic.gdx.Input.Keys.D;
 import static com.badlogic.gdx.Input.Keys.DOWN;
+import static com.badlogic.gdx.Input.Keys.L;
 import static com.badlogic.gdx.Input.Keys.LEFT;
 import static com.badlogic.gdx.Input.Keys.RIGHT;
 import static com.badlogic.gdx.Input.Keys.S;
@@ -50,15 +53,21 @@ public class GameDesktopLauncher implements ApplicationListener {
     private static final float TANK_MOVEMENT_SPEED = 0.4f;
     private static final boolean USE_RANDOM_LEVEL = false;
     private static final int AI_TANK_COUNT = 3;
+    private static final int MIN_HEALTH = 99;
+    private static final int MAX_HEALTH = 100;
+    private static final int BULLET_DAMAGE = 10;
 
     private Batch batch;
     private Level level;
     private List<TankController> controllers;
     private GameRenderer renderer;
+    private InputSource input;
+    private HealthBarDisplay healthBarDisplay;
 
     private Texture blueTankTexture;
     private Texture greenTreeTexture;
     private Texture bulletTexture;
+    private Texture healthBarPixel;
 
     @Override
     public void create() {
@@ -70,6 +79,9 @@ public class GameDesktopLauncher implements ApplicationListener {
         blueTankTexture = new Texture("images/tank_blue.png");
         greenTreeTexture = new Texture("images/greenTree.png");
         bulletTexture = createBulletTexture();
+        healthBarPixel = createPixelTexture();
+
+        healthBarDisplay = new HealthBarDisplay();
 
         Random random = new Random();
         LevelSource levelSource = createLevelSource(random);
@@ -79,10 +91,14 @@ public class GameDesktopLauncher implements ApplicationListener {
                 levelRenderer,
                 new TextureRegion(blueTankTexture),
                 new TextureRegion(greenTreeTexture),
-                new TextureRegion(bulletTexture));
+                new TextureRegion(bulletTexture),
+                healthBarDisplay,
+                healthBarPixel);
         level.addObserver(renderer);
 
-        Tank playerTank = new Tank(level.getTankStart(), TANK_MOVEMENT_SPEED);
+        int playerHealth = randomHealth(random);
+        Tank playerTank = new Tank(level.getTankStart(),
+                TANK_MOVEMENT_SPEED, playerHealth, BULLET_DAMAGE);
         level.addTank(playerTank);
 
         RandomTankSpawner spawner = new RandomTankSpawner(random);
@@ -91,7 +107,7 @@ public class GameDesktopLauncher implements ApplicationListener {
             level.addTank(aiTank);
         }
 
-        InputSource input = new GdxInputSource();
+        input = new GdxInputSource();
         controllers = new ArrayList<>();
         controllers.add(new TankController(playerTank,
                 new PlayerTankControlStrategy(input, buildKeyBindings(), SPACE)));
@@ -121,10 +137,23 @@ public class GameDesktopLauncher implements ApplicationListener {
         return bindings;
     }
 
+    private int randomHealth(Random random) {
+        return MIN_HEALTH + random.nextInt(MAX_HEALTH - MIN_HEALTH + 1);
+    }
+
     private Texture createBulletTexture() {
         Pixmap pixmap = new Pixmap(32, 32, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.YELLOW);
         pixmap.fillCircle(16, 16, 8);
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private Texture createPixelTexture() {
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
         Texture texture = new Texture(pixmap);
         pixmap.dispose();
         return texture;
@@ -136,6 +165,10 @@ public class GameDesktopLauncher implements ApplicationListener {
         Gdx.gl.glClear(GL_COLOR_BUFFER_BIT);
 
         float deltaTime = Gdx.graphics.getDeltaTime();
+
+        if (input.isKeyJustPressed(L)) {
+            new ToggleHealthBarsCommand(healthBarDisplay).execute();
+        }
 
         for (TankController controller : controllers) {
             controller.createCommand(level);
@@ -156,6 +189,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         greenTreeTexture.dispose();
         blueTankTexture.dispose();
         bulletTexture.dispose();
+        healthBarPixel.dispose();
         renderer.dispose();
         batch.dispose();
     }

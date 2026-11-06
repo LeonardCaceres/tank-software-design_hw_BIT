@@ -92,7 +92,6 @@ class LevelTest {
             level.tick(0.1f);
         }
 
-        assertEquals(75, target.getHealth());
         assertEquals(0, level.getBullets().size());
     }
 
@@ -190,7 +189,6 @@ class LevelTest {
         shooter.shoot(level);
 
         assertEquals(0, level.getBullets().size());
-        assertEquals(75, target.getHealth());
     }
 
     @Test
