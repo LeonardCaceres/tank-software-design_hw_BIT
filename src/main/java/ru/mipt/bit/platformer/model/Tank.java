@@ -17,7 +17,7 @@ public class Tank {
     private float shootCooldownLeft = 0f;
 
     public Tank(Position start, float movementSpeed) {
-        this(start, movementSpeed, 100, 25);
+        this(start, movementSpeed, 100, 10);
     }
 
     public Tank(Position start, float movementSpeed, int maxHealth, int bulletDamage) {

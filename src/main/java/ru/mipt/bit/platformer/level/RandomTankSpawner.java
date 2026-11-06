@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Random;
 
 public class RandomTankSpawner {
+    private static final int MIN_HEALTH = 80;
+    private static final int MAX_HEALTH = 100;
+    private static final int BULLET_DAMAGE = 25;
+
     private final Random random;
 
     public RandomTankSpawner(Random random) {
@@ -37,10 +41,15 @@ public class RandomTankSpawner {
             int y = random.nextInt(level.getField().getHeight());
             Position position = new Position(x, y);
             if (isFree(position, level, alreadySpawned)) {
-                return new Tank(position, speed);
+                int health = randomHealth();
+                return new Tank(position, speed, health, BULLET_DAMAGE);
             }
         }
         return null;
+    }
+
+    private int randomHealth() {
+        return MIN_HEALTH + random.nextInt(MAX_HEALTH - MIN_HEALTH + 1);
     }
 
     private boolean isFree(Position position, Level level,

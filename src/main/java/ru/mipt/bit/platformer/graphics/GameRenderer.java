@@ -1,5 +1,6 @@
 package ru.mipt.bit.platformer.graphics;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import ru.mipt.bit.platformer.model.Bullet;
@@ -16,6 +17,8 @@ public class GameRenderer implements LevelObserver {
     private final TextureRegion tankTexture;
     private final TextureRegion treeTexture;
     private final TextureRegion bulletTexture;
+    private final HealthBarDisplay healthBarDisplay;
+    private final Texture healthBarPixel;
     private final TileMovement tileMovement;
 
     private final Map<Tank, TankRenderer> tankRenderers = new LinkedHashMap<>();
@@ -25,17 +28,24 @@ public class GameRenderer implements LevelObserver {
     public GameRenderer(LevelRenderer levelRenderer,
                         TextureRegion tankTexture,
                         TextureRegion treeTexture,
-                        TextureRegion bulletTexture) {
+                        TextureRegion bulletTexture,
+                        HealthBarDisplay healthBarDisplay,
+                        Texture healthBarPixel) {
         this.levelRenderer = levelRenderer;
         this.tankTexture = tankTexture;
         this.treeTexture = treeTexture;
         this.bulletTexture = bulletTexture;
+        this.healthBarDisplay = healthBarDisplay;
+        this.healthBarPixel = healthBarPixel;
         this.tileMovement = levelRenderer.getTileMovement();
     }
 
     @Override
     public void onTankAdded(Tank tank) {
-        tankRenderers.put(tank, new TankRenderer(tankTexture, tileMovement, tank));
+        TankRenderer simple = new SimpleTankRenderer(tankTexture, tileMovement, tank);
+        TankRenderer decorated = new HealthBarTankRenderer(
+                simple, tank, healthBarDisplay, healthBarPixel);
+        tankRenderers.put(tank, decorated);
     }
 
     @Override
