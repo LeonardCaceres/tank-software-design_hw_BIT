@@ -4,6 +4,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * <b>Domain Entity</b> (aggregate root).
+ * <p>Single entry-point for level mutations: {@link #addTree}, {@link #addTank},
+ * {@link #removeTank}, {@link #addBullet}, {@link #removeBullet}. External code
+ * cannot bypass notifications by mutating the {@link Field} directly —
+ * {@link Field#addObstacle} is package-private.</p>
+ * <p>Observable: notifies {@link LevelObserver} subscribers (driven port).</p>
+ */
 public class Level {
     private final Field field;
     private final Position tankStart;
@@ -18,8 +26,8 @@ public class Level {
 
     public void addObserver(LevelObserver observer) {
         observers.add(observer);
-        for (Tree tree : field.getTrees()) {
-            observer.onTreeAdded(tree);
+        for (Obstacle obstacle : field.getObstacles()) {
+            observer.onObstacleAdded(obstacle);
         }
         for (Tank tank : tanks) {
             observer.onTankAdded(tank);
@@ -30,31 +38,32 @@ public class Level {
     }
 
     public void addTree(Tree tree) {
-        field.addTree(tree);
-        for (LevelObserver o : observers) {
-            o.onTreeAdded(tree);
+        field.addObstacle(tree);
+        for (LevelObserver observer : observers) {
+            observer.onObstacleAdded(tree);
         }
     }
 
     public void addTank(Tank tank) {
         tanks.add(tank);
-        for (LevelObserver o : observers) {
-            o.onTankAdded(tank);
+        for (LevelObserver observer : observers) {
+            observer.onTankAdded(tank);
         }
     }
 
     public void removeTank(Tank tank) {
         if (tanks.remove(tank)) {
-            for (LevelObserver o : observers) {
-                o.onTankRemoved(tank);
+            tank.markRemoved();
+            for (LevelObserver observer : observers) {
+                observer.onTankRemoved(tank);
             }
         }
     }
 
     public void addBullet(Bullet bullet) {
         bullets.add(bullet);
-        for (LevelObserver o : observers) {
-            o.onBulletAdded(bullet);
+        for (LevelObserver observer : observers) {
+            observer.onBulletAdded(bullet);
         }
         if (handleBulletCollisionAt(bullet, bullet.getPosition())) {
             removeBullet(bullet);
@@ -63,8 +72,8 @@ public class Level {
 
     public void removeBullet(Bullet bullet) {
         if (bullets.remove(bullet)) {
-            for (LevelObserver o : observers) {
-                o.onBulletRemoved(bullet);
+            for (LevelObserver observer : observers) {
+                observer.onBulletRemoved(bullet);
             }
         }
     }
@@ -76,7 +85,6 @@ public class Level {
             }
             tank.update(deltaTime);
         }
-
         for (Bullet bullet : new ArrayList<>(bullets)) {
             if (!bullets.contains(bullet)) {
                 continue;

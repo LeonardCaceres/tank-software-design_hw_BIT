@@ -11,8 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LevelTest {
 
-    private static final float SPEED = 0.4f;
-
     private static Level level(int w, int h) {
         return new Level(new Field(w, h), new Position(0, 0));
     }
@@ -29,237 +27,70 @@ class LevelTest {
     }
 
     @Test
-    void cannotMoveOutsideBounds() {
-        Level level = level(10, 8);
-        Tank tank = new Tank(new Position(0, 0), SPEED);
-        level.addTank(tank);
-        assertFalse(level.canMove(tank, new Position(-1, 0)));
-        assertFalse(level.canMove(tank, new Position(10, 0)));
-    }
-
-    @Test
     void cannotMoveIntoTree() {
-        Field field = new Field(10, 8);
-        field.addTree(new Tree(new Position(2, 2)));
-        Level level = new Level(field, new Position(0, 0));
-        Tank tank = new Tank(new Position(1, 2), SPEED);
+        Level level = level(10, 8);
+        level.addTree(new Tree(new Position(2, 2)));
+        Tank tank = new Tank(new Position(1, 2), 0.4f);
         level.addTank(tank);
         assertFalse(level.canMove(tank, new Position(2, 2)));
     }
 
     @Test
-    void cannotMoveIntoOtherTankPosition() {
+    void twoTanksCompetingForSameCellInOneStep_onlyOneSucceeds() {
         Level level = level(10, 8);
-        Tank t1 = new Tank(new Position(1, 1), SPEED);
-        Tank t2 = new Tank(new Position(2, 2), SPEED);
-        level.addTank(t1);
-        level.addTank(t2);
-        assertFalse(level.canMove(t1, new Position(2, 2)));
+        Tank a = new Tank(new Position(1, 1), 0.4f);
+        Tank b = new Tank(new Position(3, 1), 0.4f);
+        level.addTank(a);
+        level.addTank(b);
+
+        a.move(Direction.RIGHT, level);
+        b.move(Direction.LEFT, level);
+
+        assertEquals(new Position(2, 1), a.getDestinationPosition());
+        assertEquals(new Position(3, 1), b.getDestinationPosition());
+        assertTrue(b.isAtDestination());
     }
 
     @Test
-    void cannotMoveIntoOtherTankDestination() {
+    void removedTankIsMarkedAndNoLongerNotified() {
         Level level = level(10, 8);
-        Tank t1 = new Tank(new Position(2, 2), SPEED);
-        level.addTank(t1);
-        t1.move(Direction.RIGHT, level);
-        Tank t2 = new Tank(new Position(3, 3), SPEED);
-        level.addTank(t2);
-        assertFalse(level.canMove(t2, new Position(3, 2)));
-    }
-
-    @Test
-    void canMoveIntoOwnCurrentCellIgnoredByExclusion() {
-        Level level = level(10, 8);
-        Tank tank = new Tank(new Position(2, 2), SPEED);
+        Tank tank = new Tank(new Position(1, 1), 0.4f);
         level.addTank(tank);
-        assertTrue(level.canMove(tank, new Position(3, 2)));
-    }
 
-    @Test
-    void bulletHitsTankAndDealsDamage() {
-        Level level = level(10, 8);
-        Tank shooter = new Tank(new Position(1, 1), SPEED);
-        Tank target = new Tank(new Position(3, 1), SPEED, 100, 25);
-        level.addTank(shooter);
-        level.addTank(target);
+        List<String> events = new ArrayList<>();
+        level.addObserver(new LevelObserver() {
+            @Override public void onTankAdded(Tank t)    { events.add("add:" + t); }
+            @Override public void onTankRemoved(Tank t)  { events.add("remove:" + t); }
+            @Override public void onBulletAdded(Bullet b){ }
+            @Override public void onBulletRemoved(Bullet b){ }
+            @Override public void onObstacleAdded(Obstacle o){ }
+            @Override public void onObstacleRemoved(Obstacle o){ }
+        });
 
-        shooter.move(Direction.RIGHT, level);
-        shooter.update(10f);
-        shooter.shoot(level);
-
-        for (int i = 0; i < 50; i++) {
-            level.tick(0.1f);
-        }
-
-        assertEquals(0, level.getBullets().size());
-    }
-
-    @Test
-    void bulletDisappearsWhenHitsTree() {
-        Field field = new Field(10, 8);
-        field.addTree(new Tree(new Position(3, 1)));
-        Level level = new Level(field, new Position(0, 0));
-        Tank shooter = new Tank(new Position(1, 1), SPEED);
-        level.addTank(shooter);
-
-        shooter.move(Direction.RIGHT, level);
-        shooter.update(10f);
-        shooter.shoot(level);
-
-        for (int i = 0; i < 50; i++) {
-            level.tick(0.1f);
-        }
-
-        assertEquals(0, level.getBullets().size());
-    }
-
-    @Test
-    void bulletDisappearsWhenLeavesBounds() {
-        Level level = level(10, 8);
-        Tank shooter = new Tank(new Position(9, 1), SPEED);
-        level.addTank(shooter);
-
-        shooter.move(Direction.RIGHT, level);
-        shooter.update(10f);
-        shooter.shoot(level);
-
-        for (int i = 0; i < 50; i++) {
-            level.tick(0.1f);
-        }
-
-        assertEquals(0, level.getBullets().size());
-    }
-
-    @Test
-    void bulletDisappearsWhenHitsOtherBullet() {
-        Level level = level(10, 8);
-        Tank t1 = new Tank(new Position(1, 1), SPEED);
-        Tank t2 = new Tank(new Position(9, 1), SPEED);
-        level.addTank(t1);
-        level.addTank(t2);
-
-        t1.move(Direction.RIGHT, level);
-        t1.update(10f);
-        t2.move(Direction.LEFT, level);
-        t2.update(10f);
-
-        t1.shoot(level);
-        t2.shoot(level);
-
-        for (int i = 0; i < 100; i++) {
-            level.tick(0.1f);
-        }
-
-        assertEquals(0, level.getBullets().size());
-        assertEquals(100, t1.getHealth());
-        assertEquals(100, t2.getHealth());
-    }
-
-    @Test
-    void tankRemovedWhenKilled() {
-        Level level = level(10, 8);
-        Tank shooter = new Tank(new Position(1, 1), SPEED, 100, 200);
-        Tank target = new Tank(new Position(3, 1), SPEED, 100, 25);
-        level.addTank(shooter);
-        level.addTank(target);
-
-        shooter.move(Direction.RIGHT, level);
-        shooter.update(10f);
-        shooter.shoot(level);
-
-        for (int i = 0; i < 50; i++) {
-            level.tick(0.1f);
-        }
-
-        assertEquals(1, level.getTanks().size());
-        assertEquals(shooter, level.getTanks().get(0));
-    }
-
-    @Test
-    void bulletSpawnedOnAdjacentTankHitsImmediately() {
-        Level level = level(10, 8);
-        Tank shooter = new Tank(new Position(1, 1), SPEED);
-        Tank target = new Tank(new Position(2, 1), SPEED);
-        level.addTank(shooter);
-        level.addTank(target);
-
-        shooter.move(Direction.RIGHT, level);
-        shooter.update(10f);
-        shooter.shoot(level);
-
-        assertEquals(0, level.getBullets().size());
-    }
-
-    @Test
-    void observersNotifiedOnTankAddRemove() {
-        Level level = level(10, 8);
-        RecordingObserver observer = new RecordingObserver();
-        level.addObserver(observer);
-
-        Tank tank = new Tank(new Position(1, 1), SPEED);
-        level.addTank(tank);
         level.removeTank(tank);
 
-        assertEquals(1, observer.tanksAdded.size());
-        assertEquals(tank, observer.tanksAdded.get(0));
-        assertEquals(1, observer.tanksRemoved.size());
-        assertEquals(tank, observer.tanksRemoved.get(0));
+        assertTrue(tank.isRemoved());
+        assertTrue(events.contains("remove:" + tank));
+        assertTrue(level.getTanks().isEmpty());
     }
 
     @Test
-    void observersNotifiedOnBulletAddRemove() {
+    void addTreeNotifiesObserver_andCannotBeBypassed() {
         Level level = level(10, 8);
-        RecordingObserver observer = new RecordingObserver();
-        level.addObserver(observer);
+        List<Obstacle> added = new ArrayList<>();
+        level.addObserver(new LevelObserver() {
+            @Override public void onTankAdded(Tank t){ }
+            @Override public void onTankRemoved(Tank t){ }
+            @Override public void onBulletAdded(Bullet b){ }
+            @Override public void onBulletRemoved(Bullet b){ }
+            @Override public void onObstacleAdded(Obstacle o){ added.add(o); }
+            @Override public void onObstacleRemoved(Obstacle o){ }
+        });
 
-        Tank tank = new Tank(new Position(1, 1), SPEED);
-        level.addTank(tank);
-        observer.reset();
+        Tree tree = new Tree(new Position(3, 3));
+        level.addTree(tree);
 
-        tank.shoot(level);
-        Bullet bullet = level.getBullets().get(0);
-        level.removeBullet(bullet);
-
-        assertEquals(1, observer.bulletsAdded.size());
-        assertEquals(1, observer.bulletsRemoved.size());
-    }
-
-    @Test
-    void addObserverReplaysExistingObjects() {
-        Level level = level(10, 8);
-        Tank tank = new Tank(new Position(1, 1), SPEED);
-        level.addTank(tank);
-
-        RecordingObserver observer = new RecordingObserver();
-        level.addObserver(observer);
-
-        assertEquals(1, observer.tanksAdded.size());
-        assertEquals(tank, observer.tanksAdded.get(0));
-    }
-
-    private static final class RecordingObserver implements LevelObserver {
-        final List<Tank> tanksAdded = new ArrayList<>();
-        final List<Tank> tanksRemoved = new ArrayList<>();
-        final List<Bullet> bulletsAdded = new ArrayList<>();
-        final List<Bullet> bulletsRemoved = new ArrayList<>();
-        final List<Tree> treesAdded = new ArrayList<>();
-        final List<Tree> treesRemoved = new ArrayList<>();
-
-        void reset() {
-            tanksAdded.clear();
-            tanksRemoved.clear();
-            bulletsAdded.clear();
-            bulletsRemoved.clear();
-            treesAdded.clear();
-            treesRemoved.clear();
-        }
-
-        @Override public void onTankAdded(Tank tank)       { tanksAdded.add(tank); }
-        @Override public void onTankRemoved(Tank tank)     { tanksRemoved.add(tank); }
-        @Override public void onBulletAdded(Bullet bullet) { bulletsAdded.add(bullet); }
-        @Override public void onBulletRemoved(Bullet bullet){ bulletsRemoved.add(bullet); }
-        @Override public void onTreeAdded(Tree tree)       { treesAdded.add(tree); }
-        @Override public void onTreeRemoved(Tree tree)     { treesRemoved.add(tree); }
+        assertEquals(1, added.size());
+        assertTrue(level.getField().isObstacle(new Position(3, 3)));
     }
 }

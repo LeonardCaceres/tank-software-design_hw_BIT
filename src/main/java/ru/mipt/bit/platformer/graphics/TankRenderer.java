@@ -1,10 +1,16 @@
 package ru.mipt.bit.platformer.graphics;
 
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Rectangle;
-
-public interface TankRenderer {
-    void render(Batch batch);
-
+/**
+ * <b>Port</b> (within graphics infrastructure). Specialisation of {@link EntityRenderer}
+ * for tank renderers that expose their on-screen bounds (used by decorators such as
+ * {@link HealthBarTankRenderer}).
+ */
+public interface TankRenderer extends EntityRenderer {
     Rectangle getRenderBounds();
+
+    @Override
+    default int getLayer() {
+        return 1;
+    }
 }

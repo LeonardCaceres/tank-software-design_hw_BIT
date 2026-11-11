@@ -9,8 +9,11 @@ import ru.mipt.bit.platformer.util.TileMovement;
 
 import static ru.mipt.bit.platformer.util.GdxGameUtils.createBoundingRectangle;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.drawTextureRegionUnscaled;
-
-public class BulletRenderer {
+/**
+ * <b>Adapter</b> (driven, infrastructure). Renders a bullet via libGDX.
+ * Layer 2 (above tanks).
+ */
+public class BulletRenderer implements EntityRenderer {
     private final Bullet bullet;
     private final TextureRegion graphics;
     private final Rectangle rectangle;
@@ -25,6 +28,7 @@ public class BulletRenderer {
         this.bullet = bullet;
     }
 
+    @Override
     public void render(Batch batch) {
         GridPoint2 from = new GridPoint2(
                 bullet.getPosition().getX(), bullet.getPosition().getY());
@@ -36,5 +40,10 @@ public class BulletRenderer {
                 rectangle, from, to, bullet.getMovementProgress());
 
         drawTextureRegionUnscaled(batch, graphics, rectangle, 0f);
+    }
+
+    @Override
+    public int getLayer() {
+        return 2;
     }
 }

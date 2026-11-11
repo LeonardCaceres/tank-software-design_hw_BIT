@@ -11,6 +11,10 @@ import ru.mipt.bit.platformer.model.Tank;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * <b>Application Service</b>. Translates keyboard state into commands.
+ * <p>Does not own infrastructure; reads input via {@link InputSource} (port).</p>
+ */
 public class PlayerTankControlStrategy implements TankControlStrategy {
     private final InputSource input;
     private final Map<Integer, Direction> keyBindings;
@@ -26,6 +30,9 @@ public class PlayerTankControlStrategy implements TankControlStrategy {
 
     @Override
     public Optional<Command> nextCommand(Tank tank, Level level) {
+        if (tank.isRemoved()) {
+            return Optional.empty();
+        }
         if (input.isKeyPressed(shootKey)) {
             return Optional.of(new ShootCommand(tank, level));
         }
