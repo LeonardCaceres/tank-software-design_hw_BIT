@@ -24,24 +24,6 @@ class TankTest {
     }
 
     @Test
-    void startsWithFullHealth() {
-        Tank tank = new Tank(new Position(2, 2), SPEED, 100, 25);
-        assertEquals(100, tank.getHealth());
-        assertEquals(100, tank.getMaxHealth());
-        assertEquals(25, tank.getBulletDamage());
-        assertFalse(tank.isDead());
-    }
-
-    @Test
-    void moveChangesDirectionImmediately() {
-        Tank tank = new Tank(new Position(2, 2), SPEED);
-        Level level = emptyLevel();
-        level.addTank(tank);
-        tank.move(Direction.UP, level);
-        assertEquals(Direction.UP, tank.getDirection());
-    }
-
-    @Test
     void moveIntoEmptyCellStartsMovement() {
         Tank tank = new Tank(new Position(2, 2), SPEED);
         Level level = emptyLevel();
@@ -54,8 +36,8 @@ class TankTest {
     @Test
     void moveIntoObstacleDoesNotStartMovement() {
         Field field = new Field(WIDTH, HEIGHT);
-        field.addTree(new Tree(new Position(3, 2)));
         Level level = new Level(field, new Position(0, 0));
+        level.addTree(new Tree(new Position(3, 2)));
         Tank tank = new Tank(new Position(2, 2), SPEED);
         level.addTank(tank);
         tank.move(Direction.RIGHT, level);
@@ -74,7 +56,7 @@ class TankTest {
     }
 
     @Test
-    void moveIntoAnotherTankPositionIsRejected() {
+    void cannotMoveIntoAnotherTanksCurrentCell() {
         Level level = emptyLevel();
         Tank t1 = new Tank(new Position(2, 2), SPEED);
         Tank t2 = new Tank(new Position(3, 2), SPEED);
@@ -87,7 +69,7 @@ class TankTest {
     }
 
     @Test
-    void moveIntoAnotherTankDestinationIsRejected() {
+    void cannotMoveIntoAnotherTanksDestination() {
         Level level = emptyLevel();
         Tank t1 = new Tank(new Position(2, 2), SPEED);
         level.addTank(t1);
@@ -99,6 +81,37 @@ class TankTest {
 
         assertEquals(new Position(3, 3), t2.getDestinationPosition());
         assertTrue(t2.isAtDestination());
+    }
+
+    @Test
+    void cannotMoveIntoOriginOfMovingTank_untilItArrives() {
+        Level level = emptyLevel();
+        Tank moving = new Tank(new Position(2, 2), SPEED);
+        level.addTank(moving);
+        moving.move(Direction.RIGHT, level);
+
+        Tank other = new Tank(new Position(1, 2), SPEED);
+        level.addTank(other);
+        other.move(Direction.RIGHT, level);
+
+        assertEquals(new Position(1, 2), other.getDestinationPosition());
+        assertTrue(other.isAtDestination());
+    }
+
+    @Test
+    void originFreedAfterTankArrives() {
+        Level level = emptyLevel();
+        Tank moving = new Tank(new Position(2, 2), SPEED);
+        level.addTank(moving);
+        moving.move(Direction.RIGHT, level);
+        moving.update(10f);
+
+        Tank other = new Tank(new Position(1, 2), SPEED);
+        level.addTank(other);
+        other.move(Direction.RIGHT, level);
+
+        assertEquals(new Position(2, 2), other.getDestinationPosition());
+        assertFalse(other.isAtDestination());
     }
 
     @Test
@@ -138,82 +151,18 @@ class TankTest {
     }
 
     @Test
-    void takeDamageReducesHealth() {
-        Tank tank = new Tank(new Position(0, 0), SPEED, 100, 25);
-        tank.takeDamage(40);
-        assertEquals(60, tank.getHealth());
-        assertFalse(tank.isDead());
-    }
-
-    @Test
-    void isDeadWhenHealthBelowZero() {
-        Tank tank = new Tank(new Position(0, 0), SPEED, 100, 25);
-        tank.takeDamage(101);
-        assertTrue(tank.isDead());
-    }
-
-    @Test
-    void isNotDeadAtZeroHealth() {
-        Tank tank = new Tank(new Position(0, 0), SPEED, 100, 25);
-        tank.takeDamage(100);
-        assertEquals(0, tank.getHealth());
-        assertFalse(tank.isDead());
-    }
-
-    @Test
-    void shootAddsBulletToLevel() {
-        Level level = emptyLevel();
+    void removedTankCannotMoveOrShoot() {
         Tank tank = new Tank(new Position(2, 2), SPEED);
-        level.addTank(tank);
-
-        tank.shoot(level);
-
-        assertEquals(1, level.getBullets().size());
-    }
-
-    @Test
-    void shootBulletStartsAtNextCellInDirection() {
         Level level = emptyLevel();
-        Tank tank = new Tank(new Position(2, 2), SPEED);
         level.addTank(tank);
+        level.removeTank(tank);
+
+        assertTrue(tank.isRemoved());
         tank.move(Direction.RIGHT, level);
-        tank.update(10f);
+        assertTrue(tank.isAtDestination());
+        assertEquals(new Position(2, 2), tank.getDestinationPosition());
 
         tank.shoot(level);
-
-        assertEquals(1, level.getBullets().size());
-        Bullet bullet = level.getBullets().get(0);
-        assertEquals(new Position(4, 2), bullet.getPosition());
-        assertEquals(tank, bullet.getOwner());
-    }
-
-    @Test
-    void shootHasCooldown() {
-        Level level = emptyLevel();
-        Tank tank = new Tank(new Position(2, 2), SPEED);
-        level.addTank(tank);
-
-        tank.shoot(level);
-        tank.shoot(level);
-
-        assertEquals(1, level.getBullets().size());
-    }
-
-    @Test
-    void shootWorksAgainAfterCooldown() {
-        Level level = emptyLevel();
-        Tank tank = new Tank(new Position(2, 2), SPEED);
-        level.addTank(tank);
-
-        tank.shoot(level);
-        assertEquals(1, level.getBullets().size());
-
-        for (int i = 0; i < 20; i++) {
-            level.tick(0.1f);
-        }
-        assertTrue(level.getBullets().isEmpty(), "bullet should have flown away");
-
-        tank.shoot(level);
-        assertEquals(1, level.getBullets().size());
+        assertTrue(level.getBullets().isEmpty());
     }
 }

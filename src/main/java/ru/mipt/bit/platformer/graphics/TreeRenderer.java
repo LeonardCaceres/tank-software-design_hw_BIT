@@ -11,7 +11,11 @@ import static ru.mipt.bit.platformer.util.GdxGameUtils.createBoundingRectangle;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.drawTextureRegionUnscaled;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.moveRectangleAtTileCenter;
 
-public class TreeRenderer {
+/**
+ * <b>Adapter</b> (driven, infrastructure). Renders a tree via libGDX.
+ * Layer 0 (below tanks and bullets).
+ */
+public class TreeRenderer implements EntityRenderer {
     private final TextureRegion graphics;
     private final Rectangle rectangle;
 
@@ -24,7 +28,13 @@ public class TreeRenderer {
         moveRectangleAtTileCenter(groundLayer, rectangle, gdx);
     }
 
+    @Override
     public void render(Batch batch) {
         drawTextureRegionUnscaled(batch, graphics, rectangle, 0f);
+    }
+
+    @Override
+    public int getLayer() {
+        return 0;
     }
 }

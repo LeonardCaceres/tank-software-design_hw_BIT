@@ -48,14 +48,27 @@ import static com.badlogic.gdx.Input.Keys.UP;
 import static com.badlogic.gdx.Input.Keys.W;
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
 
+/**
+ * <b>Infrastructure / Composition Root</b>. Wires all layers together:
+ * <ul>
+ *   <li>{@link LevelSource} — injected via constructor; chosen in {@link #main(String[])}</li>
+ *   <li>{@link InputSource} — adapter to libGDX input</li>
+ *   <li>{@link GameRenderer} — adapter to libGDX graphics, subscribed as {@code LevelObserver}</li>
+ * </ul>
+ * {@code FileContentReader} (wraps Gdx.files), and {@code TextureProvider}
+ * (wraps new Texture(...)) into explicit ports — currently these are wired
+ * directly in this composition root.</p>
+ */
 public class GameDesktopLauncher implements ApplicationListener {
 
     private static final float TANK_MOVEMENT_SPEED = 0.4f;
-    private static final boolean USE_RANDOM_LEVEL = false;
     private static final int AI_TANK_COUNT = 3;
-    private static final int MIN_HEALTH = 99;
+    private static final int MIN_HEALTH = 90;
     private static final int MAX_HEALTH = 100;
     private static final int BULLET_DAMAGE = 10;
+    private static final String DEFAULT_LEVEL_PATH = "levels/level1.txt";
+
+    private final LevelSource levelSource;
 
     private Batch batch;
     private Level level;
@@ -68,6 +81,10 @@ public class GameDesktopLauncher implements ApplicationListener {
     private Texture greenTreeTexture;
     private Texture bulletTexture;
     private Texture healthBarPixel;
+
+    public GameDesktopLauncher(LevelSource levelSource) {
+        this.levelSource = levelSource;
+    }
 
     @Override
     public void create() {
@@ -84,8 +101,8 @@ public class GameDesktopLauncher implements ApplicationListener {
         healthBarDisplay = new HealthBarDisplay();
 
         Random random = new Random();
-        LevelSource levelSource = createLevelSource(random);
         level = levelSource.load();
+        validateLevelSize(level, tiledMap);
 
         renderer = new GameRenderer(
                 levelRenderer,
@@ -116,12 +133,17 @@ public class GameDesktopLauncher implements ApplicationListener {
         }
     }
 
-    private LevelSource createLevelSource(Random random) {
-        if (USE_RANDOM_LEVEL) {
-            return new RandomLevelSource(10, 8, 8, random);
+    private void validateLevelSize(Level level, TiledMap tiledMap) {
+        Integer mapWidth = tiledMap.getProperties().get("width", Integer.class);
+        Integer mapHeight = tiledMap.getProperties().get("height", Integer.class);
+        if (mapWidth == null || mapHeight == null) return;
+        if (level.getField().getWidth() != mapWidth
+                || level.getField().getHeight() != mapHeight) {
+            Gdx.app.error("GameDesktopLauncher",
+                    "Level size mismatch: file=" + level.getField().getWidth()
+                            + "x" + level.getField().getHeight()
+                            + ", map=" + mapWidth + "x" + mapHeight);
         }
-        String content = Gdx.files.internal("levels/level1.txt").readString();
-        return new FileLevelSource(Arrays.asList(content.split("\\r?\\n")));
     }
 
     private Map<Integer, Direction> buildKeyBindings() {
@@ -176,6 +198,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         for (TankController controller : controllers) {
             controller.executeCommand();
         }
+
         level.tick(deltaTime);
         renderer.render(batch);
     }
@@ -195,8 +218,15 @@ public class GameDesktopLauncher implements ApplicationListener {
     }
 
     public static void main(String[] args) {
+        boolean useRandom = args.length > 0 && "random".equalsIgnoreCase(args[0]);
+        LevelSource source = useRandom
+                ? new RandomLevelSource(10, 8, 8, new Random())
+                : new FileLevelSource(() -> {
+            String content = Gdx.files.internal(DEFAULT_LEVEL_PATH).readString();
+            return Arrays.asList(content.split("\\r?\\n"));
+        });
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setWindowedMode(1280, 1024);
-        new Lwjgl3Application(new GameDesktopLauncher(), config);
+        new Lwjgl3Application(new GameDesktopLauncher(source), config);
     }
 }

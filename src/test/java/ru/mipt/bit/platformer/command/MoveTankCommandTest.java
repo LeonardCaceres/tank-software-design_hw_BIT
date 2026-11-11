@@ -27,9 +27,8 @@ class MoveTankCommandTest {
 
     @Test
     void executeRespectsObstacles() {
-        Field field = new Field(10, 8);
-        field.addTree(new Tree(new Position(1, 2)));
-        Level level = new Level(field, new Position(0, 0));
+        Level level = new Level(new Field(10, 8), new Position(0, 0));
+        level.addTree(new Tree(new Position(1, 2)));
         Tank tank = new Tank(new Position(1, 1), 0.4f);
         level.addTank(tank);
 

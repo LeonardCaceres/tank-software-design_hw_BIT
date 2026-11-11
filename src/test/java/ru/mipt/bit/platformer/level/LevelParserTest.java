@@ -21,10 +21,8 @@ class LevelParserTest {
                 "_T_",
                 "_X_"
         ));
-
         assertEquals(new Position(1, 0), level.getTankStart());
-        assertEquals(1, level.getField().getTrees().size());
-        assertTrue(level.getField().getTrees().contains(new Tree(new Position(1, 1))));
+        assertTrue(level.getField().isObstacle(new Position(1, 1)));
     }
 
     @Test
@@ -42,6 +40,12 @@ class LevelParserTest {
     void missingTankStartThrows() {
         assertThrows(IllegalStateException.class,
                 () -> parser.parse(List.of("T_T", "___")));
+    }
+
+    @Test
+    void duplicateTankStartThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> parser.parse(List.of("X_X")));
     }
 
     @Test

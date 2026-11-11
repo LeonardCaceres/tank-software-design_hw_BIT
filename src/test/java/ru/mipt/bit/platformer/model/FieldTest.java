@@ -2,8 +2,8 @@ package ru.mipt.bit.platformer.model;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FieldTest {
@@ -21,23 +21,24 @@ class FieldTest {
     @Test
     void treeMakesItsCellAnObstacle() {
         Field field = new Field(WIDTH, HEIGHT);
-        field.addTree(new Tree(new Position(1, 3)));
+        field.addObstacle(new Tree(new Position(1, 3)));
         assertTrue(field.isObstacle(new Position(1, 3)));
         assertFalse(field.isObstacle(new Position(1, 4)));
     }
 
     @Test
-    void getTreesIsUnmodifiable() {
+    void getObstaclesIsUnmodifiable() {
         Field field = new Field(WIDTH, HEIGHT);
-        field.addTree(new Tree(new Position(1, 3)));
-        assertThrows(UnsupportedOperationException.class,
-                () -> field.getTrees().add(new Tree(new Position(2, 2))));
+        field.addObstacle(new Tree(new Position(1, 3)));
+        org.junit.jupiter.api.Assertions.assertThrows(
+                UnsupportedOperationException.class,
+                () -> field.getObstacles().add(new Tree(new Position(2, 2))));
     }
 
     @Test
     void dimensionsAreStored() {
         Field field = new Field(WIDTH, HEIGHT);
-        org.junit.jupiter.api.Assertions.assertEquals(WIDTH, field.getWidth());
-        org.junit.jupiter.api.Assertions.assertEquals(HEIGHT, field.getHeight());
+        assertEquals(WIDTH, field.getWidth());
+        assertEquals(HEIGHT, field.getHeight());
     }
 }

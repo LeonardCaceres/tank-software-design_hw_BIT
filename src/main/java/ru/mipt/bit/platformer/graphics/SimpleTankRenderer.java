@@ -9,7 +9,11 @@ import ru.mipt.bit.platformer.util.TileMovement;
 
 import static ru.mipt.bit.platformer.util.GdxGameUtils.createBoundingRectangle;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.drawTextureRegionUnscaled;
-
+/**
+ * <b>Adapter</b> (driven, infrastructure). Renders a tank using libGDX.
+ * <p>Implements {@link TankRenderer} (specialisation of {@link EntityRenderer})
+ * so it can be used as a decorated component (e.g. wrapped by {@code HealthBarTankRenderer}).</p>
+ */
 public class SimpleTankRenderer implements TankRenderer {
     private final Tank tank;
     private final TextureRegion graphics;

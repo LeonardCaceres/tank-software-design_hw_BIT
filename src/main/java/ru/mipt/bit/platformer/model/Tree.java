@@ -2,7 +2,12 @@ package ru.mipt.bit.platformer.model;
 
 import java.util.Objects;
 
-public class Tree {
+/**
+ * <b>Domain Entity</b>. Static obstacle on the field.
+ * <p>Implements the {@link Obstacle} domain contract; adding new obstacle types
+ * (walls, water, etc.) does not require changes in {@link Field} or {@link Tank}.</p>
+ */
+public class Tree implements Obstacle {
     private final Position position;
 
     public Tree(Position position) {
@@ -11,6 +16,11 @@ public class Tree {
 
     public Position getPosition() {
         return position;
+    }
+
+    @Override
+    public boolean blocks(Position position) {
+        return this.position.equals(position);
     }
 
     @Override

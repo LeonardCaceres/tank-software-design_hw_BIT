@@ -4,7 +4,12 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Rectangle;
 import ru.mipt.bit.platformer.model.Tank;
-
+/**
+ * <b>Decorator</b> over {@link TankRenderer}. Renders the tank via the wrapped
+ * delegate and, if enabled in {@link HealthBarDisplay}, draws an HP bar above it.
+ * <p>Uses the decorator pattern so the health-bar layer can be toggled at runtime
+ * without changing the tank renderer itself.</p>
+ */
 public class HealthBarTankRenderer implements TankRenderer {
     private final TankRenderer delegate;
     private final Tank tank;
@@ -33,6 +38,11 @@ public class HealthBarTankRenderer implements TankRenderer {
     @Override
     public Rectangle getRenderBounds() {
         return delegate.getRenderBounds();
+    }
+
+    @Override
+    public int getLayer() {
+        return delegate.getLayer();
     }
 
     private void drawHealthBar(Batch batch) {

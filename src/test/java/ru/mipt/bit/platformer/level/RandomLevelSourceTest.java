@@ -2,7 +2,9 @@ package ru.mipt.bit.platformer.level;
 
 import org.junit.jupiter.api.Test;
 import ru.mipt.bit.platformer.model.Level;
+import ru.mipt.bit.platformer.model.Obstacle;
 import ru.mipt.bit.platformer.model.Position;
+import ru.mipt.bit.platformer.model.Tree;
 
 import java.util.HashSet;
 import java.util.Random;
@@ -21,13 +23,13 @@ class RandomLevelSourceTest {
         Level b = new RandomLevelSource(10, 8, 8, new Random(42)).load();
 
         assertEquals(a.getTankStart(), b.getTankStart());
-        assertEquals(a.getField().getTrees(), b.getField().getTrees());
+        assertEquals(a.getField().getObstacles(), b.getField().getObstacles());
     }
 
     @Test
     void placesRequestedNumberOfTrees() {
         Level level = new RandomLevelSource(10, 8, 8, new Random(1)).load();
-        assertEquals(8, level.getField().getTrees().size());
+        assertEquals(8, level.getField().getObstacles().size());
     }
 
     @Test
@@ -43,7 +45,11 @@ class RandomLevelSourceTest {
         Level level = new RandomLevelSource(w, h, 8, new Random(3)).load();
 
         Set<Position> all = new HashSet<>();
-        level.getField().getTrees().forEach(t -> all.add(t.getPosition()));
+        for (Obstacle obstacle : level.getField().getObstacles()) {
+            if (obstacle instanceof Tree) {
+                all.add(((Tree) obstacle).getPosition());
+            }
+        }
         all.add(level.getTankStart());
 
         for (Position p : all) {

@@ -33,11 +33,10 @@ class RandomTankSpawnerTest {
     @Test
     void tanksDoNotOverlapWithTreesOrEachOther() {
         Field field = new Field(10, 8);
-
-        for (int x = 0; x < 10; x++) {
-            field.addTree(new Tree(new Position(x, 0)));
-        }
         Level level = new Level(field, new Position(5, 5));
+        for (int x = 0; x < 10; x++) {
+            level.addTree(new Tree(new Position(x, 0)));
+        }
         level.addTank(new Tank(new Position(5, 5), SPEED));
 
         List<Tank> spawned = new RandomTankSpawner(new Random(1))
